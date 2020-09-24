@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from MSS.Vessels import Ship
+from MarineSystemSim.Vessels import Ship
 import numpy as np
 from scipy.integrate import ode
 
