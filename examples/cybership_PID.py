@@ -133,5 +133,3 @@ if __name__ == "__main__":
         plt.show()
     except ImportError:
         pass
-
-    print(y[0,-1], y[1,-1], y[3,-1])
