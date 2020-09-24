@@ -1,6 +1,6 @@
 # Marine Systems Simulation python package
 
-This package implements state-space differential equation models and for simulating Marine Systems (e.g., ships) in Python 2.7 (master branch) and 3.6 (python36 branch).
+This package implements state-space differential equation models and for simulating marine systems (e.g., ships) in Python 2.7 (master branch) and 3.6 (python36 branch).
 Currently this package implements a generic ship state-space model, from the combined kinematic and newtonian dynamic 3 DoF models in the [Marine Cybernetics lecture notes](http://folk.ntnu.no/assor/Public/2018-08-20%20marcyb.pdf).
 
 
@@ -20,7 +20,7 @@ Package structure based on Thor Fossen and Asgeir Johansen's Marine System Simul
 
 Install the package directly from PyPI:
 
-```pip install python-mss```
+```pip install MarineSystemSim```
 
 Or clone the repository and install locally:
 
@@ -32,7 +32,7 @@ Simply import the class of controller marine system wanted and instantiate it.
 Optional arguments for the constructor function are the differential equation solver and solving method, and which input model to use (e.g., "generalized" or "rudder").
 
 ```
-from MSS.Vessels import Ship
+from MarineSystemSim.Vessels import Ship
 
 ship = Ship(input_model="rudder")
 ```
