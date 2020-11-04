@@ -1,69 +1,7 @@
 # coding=utf-8
 
-import numpy as np
-from math import pi, sqrt, sin, cos
+from numpy import zeros, array, cos, sin
 from scipy.integrate import ode
-
-# Digital PID controller class
-class PID:
-    def __init__(self, kp=0, ki=0, kd=0, usat=[-np.inf,np.inf], T=1, aw=True):
-        # Controller gains
-        self.kp = kp
-        self.ki = ki
-        self.kd = kd
-
-        # Integrator term
-        self.I = 0
-        
-        # Sampling time
-        self.T = T
-
-        # Anti-windup
-        self.u = 0
-        self.aw = aw
-
-        # Controller output saturation
-        self.usat = usat
-
-        # Error vector
-        self.e = [0, 0]
-
-        # Setpoint
-        self.r = 0
-    
-    def update(self, y):
-        # Setpoint error
-        self.e[-1] = self.r - y
-
-        # Proportional
-        P = self.kp*self.e[-1]
-
-        # Integral with anti-windup
-        if self.aw:
-            if (self.usat[0] < self.u and self.u < self.usat[1]) or \
-               (self.u > self.usat[1] and self.e[-1] < 0) or \
-               (self.u < self.usat[0] and self.e[-1] > 0):
-               self.I += self.e[-1]*self.T
-        I = self.ki*self.I
-
-        # Derivative
-        D = ((self.e[-1] - self.e[-2]) / self.T)*self.kd
-        
-        # PID controller output with saturation
-        self.u = self.saturate(P+I+D)
-
-        # Roll back error vector
-        self.e[-2] = self.e[-1]
-
-        return self.u
-    
-    # Apply saturation to controller output
-    def saturate(self, u):
-        if u < self.usat[0]:
-            u = self.usat[0]
-        elif u > self.usat[1]:
-            u = self.usat[1]
-        return u
 
 class Ship:
     # State-space model of a generic ship with 3 DoF.
@@ -97,111 +35,41 @@ class Ship:
         self.Xx = 0
         self.Yy = 0
         self.Npsi = 0
-
-        # Thruster model
-        self.Kt = 0
-        self.Kq = 0
-        self.D = 0
-
-        # Rudder model
-        self.c_rudder_v = 0
-        self.c_rudder_r = 0
-
-        # Forward speed control
-        self.speed_contr = PID()
-
-        # Heading control
-        self.heading_contr = PID()
-
+        
         # State vector
-        self.x = np.zeros(6)
+        self.x = zeros(6)
+        
+        # Input vector
+        self.u = zeros(3)
 
         # Simulation engine
-        # Select "rudder" to run thruster/rudder input model, and anything else for generalized forces model
-        if input_model == 'rudder':
-            print "[Ship] Using thruster/rudder model"
-            self.ode_solver = ode(self.update_rudder).set_integrator(solver, method=method)
-            self.u = np.zeros(2)
-        else:
-            print "[Ship] Using generalized forces model"
-            self.ode_solver = ode(self.update).set_integrator(solver, method=method)
-            self.u = np.zeros(3)
-
-    # Speed and heading control
-    def control(self):
-        # For speed controller, measured output is last state of surge speed (x4)
-        thr = self.speed_contr.update(self.x[3])
+        self.ode_solver = ode(self.update).set_integrator(solver, method=method)
         
-        # For heading control, measured output is last state of yaw (x3)
-        ang = self.heading_contr.update(self.x[2])
-
-        self.u[0], self.u[1] = thr, ang
-
-    # Apply control input to ship model (i.e., state-space transition functions) considering generalized forces
+    # Ship movement model (i.e., state-space transition functions)
     # Parameters:
     # t = Simulation time (not used in function, is updated by ODE solver)
     # x = System states at t-1
-    # u = System inputs (Forces in surge, sway, and yaw directions)
+    # u = System inputs (Commanded forces in surge, sway, and yaw directions)
     def update(self, t, x, u=0):             
         # Precalculate sine and cosine for speed
-        cs, ss = np.cos(x[2]), np.sin(x[2])
+        cs, ss = cos(x[2]), sin(x[2])
         
-        # Generalized forces
-        Tx = u[0]       # Surge
-        Ty = u[1]       # Sway
-        Tpsi = u[2]     # Yaw
-
         # Helper variables
         a1 = self.Iz*self.Yv_dot - self.Nr_dot*self.Yv_dot \
             + self.Nv_dot*self.Yr_dot - self.Iz*self.m + self.Nr_dot*self.m \
             + (self.Xg*self.m)**2 - self.Nv_dot*self.Xg*self.m - self.Xg*self.Yr_dot*self.m
-        a2 = Ty + self.Yr*x[2] * self.Yv*x[1]
-        a3 = Tpsi + self.Nr*x[2] * self.Nv*x[1]
+        a2 = u[1] + self.Yr*x[2] * self.Yv*x[1]
+        a3 = u[2] + self.Nr*x[2] * self.Nv*x[1]
 
         # State transition functions
         f1 = x[3]*cs - x[4]*ss
         f2 = x[3]*ss + x[4]*cs
         f3 = x[5]
-        f4 = (Tx + self.Xu*x[3])/(self.m-self.Xu_dot)
+        f4 = (u[0] + self.Xu*x[3])/(self.m-self.Xu_dot)
         f5 = (1/a1)*( (self.Xg*self.m - self.Yr_dot)*a3 + (self.Nr_dot - self.Iz)*a2 )
         f6 = (1/a1)*( (self.m - self.Yv_dot)*a3 + (self.m*self.Xg - self.Nv_dot)*a2 )
 
-        return np.array([f1, f2, f3, f4, f5, f6]).T
-
-    # Apply control input to ship model (i.e., state-space transition functions) considering thruster/rudder model
-    # Parameters:
-    # t = Simulation time (not used in function, is updated by ODE solver)
-    # x = System states at t-1
-    # u = System inputs (Commanded motor torque and rudder angle)
-    def update_rudder(self, t, x, u=0):             
-        # Precalculate sine and cosine for speed
-        cs, ss = np.cos(x[2]), np.sin(x[2])
-        
-        # Torque-to-thrust model (force in surge generated by propeller thrust)
-        Tx = (self.Kt/(self.Kq*self.D))*u[0]
-
-        # Rudder-to-forces model
-        # N.B! Forces in sway and yaw generated by rudder depend on surge speed.
-        # Thus, this ship model is underactuated, and there is a strong coupling between motor torque (i.e., propeller thrust) and heading.
-        Ty = -self.c_rudder_v * u[1] * x[3]
-        Tpsi = -self.c_rudder_r * u[1] * x[3]
-
-        # Helper variables
-        a1 = self.Iz*self.Yv_dot - self.Nr_dot*self.Yv_dot \
-            + self.Nv_dot*self.Yr_dot - self.Iz*self.m + self.Nr_dot*self.m \
-            + (self.Xg*self.m)**2 - self.Nv_dot*self.Xg*self.m - self.Xg*self.Yr_dot*self.m
-        a2 = Ty + self.Yr*x[2] * self.Yv*x[1]
-        a3 = Tpsi + self.Nr*x[2] * self.Nv*x[1]
-
-        # State transition functions
-        f1 = x[3]*cs - x[4]*ss
-        f2 = x[3]*ss + x[4]*cs
-        f3 = x[5]
-        f4 = (Tx + self.Xu*x[3])/(self.m-self.Xu_dot)
-        f5 = (1/a1)*( (self.Xg*self.m - self.Yr_dot)*a3 + (self.Nr_dot - self.Iz)*a2 )
-        f6 = (1/a1)*( (self.m - self.Yv_dot)*a3 + (self.m*self.Xg - self.Nv_dot)*a2 )
-
-        return np.array([f1, f2, f3, f4, f5, f6]).T        
+        return array([f1, f2, f3, f4, f5, f6]).T 
 
     # Perform simulation for some time, and ODE solver internally updates states
     # Parameters:
