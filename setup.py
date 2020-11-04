@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='MarineSystemSim',
-      version='0.2',
+      version='0.3',
       description='Python package for Marine Systems Simulation (e.g., models for marine vessels)',
       url='http://www.github.com/rgmaidana/python-mss',
       author='Renan Maidana',
