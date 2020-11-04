@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from MarineSystemSim.Actuator import GeneralizedForces
 from MarineSystemSim.Vessels import Ship
 import numpy as np
 from scipy.integrate import ode
@@ -25,8 +26,9 @@ if __name__ == "__main__":
     # Initial conditions (All zero in this case)
     gunnerus.x = np.zeros(gunnerus.x.shape[0])
 
-    # Input
-    gunnerus.u[0] = 1                                      # 1 N/s on surge direction
+    # Acturator input
+    actuator = GeneralizedForces()
+    actuator.u[0] = 1                                      # 1 N/s on surge direction
 
     # Simulation
     t = [0]                                                # Time vector
@@ -35,6 +37,10 @@ if __name__ == "__main__":
     sim_time = 200                                         # Simulation time
     
     while True:
+        # Update actuator output        
+        gunnerus.u = actuator.act()
+
+        # Simulate!
         gunnerus.simulate(dt=1, T=10)           # Simulate ship
         y = np.c_[y, gunnerus.x[:]]             # Store last states
 

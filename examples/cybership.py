@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from MarineSystemSim.Actuator import ThrusterRudder
 from MarineSystemSim.Vessels import Ship
 import numpy as np
 from scipy.integrate import ode
@@ -7,7 +8,7 @@ from scipy.integrate import ode
 if __name__ == "__main__":
     # Create vessel instance (CyberShip Drilling Vessel scaled model)
     # Ship states are: East position, North position, Yaw, Velocity east, Velocity north, Velocity yaw
-    cs = Ship(input_model='rudder')
+    cs = Ship()
 
     # Set CyberShip parameters (From Astrid Brodtkorb's matlab parameter files)
     cs.m = 127.92
@@ -23,17 +24,18 @@ if __name__ == "__main__":
     cs.Nv_dot = 0.157; cs.Nr_dot = 13.98
 
     # Thruster model parameters from Friedrich's master thesis, using Kt and Kq from Thruster 1: https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2415123
-    cs.Kt = 0.3763      # Propeller thrust constant
-    cs.Kq = 0.0113      # Motor torque constant
-    cs.D = 0.03
+    actuator = ThrusterRudder()
+    actuator.Kt = 0.3763      # Propeller thrust constant
+    actuator.Kq = 0.0113      # Motor torque constant
+    actuator.D = 0.03
 
     # Rudder model parameters
-    cs.c_rudder_v = 0.166
-    cs.c_rudder_r = 1.661
+    actuator.c_rudder_v = 0.166
+    actuator.c_rudder_r = 1.661
 
-    # Input
-    cs.u[0] = 0.001                         # 1 miliNewton per meter
-    cs.u[1] = 0                             # Straight rudder
+    # Actuator input
+    actuator.u[0] = 0.001                         # 1 miliNewton per meter
+    actuator.u[1] = 0                             # Straight rudder
 
     # Simulation
     t = [0]                                 # Time vector
@@ -46,6 +48,10 @@ if __name__ == "__main__":
     cs.x[3] = 2/1.943844    # 2 knots in surge direction
 
     while True:
+        # Update actuator output        
+        cs.u = actuator.act(cs.x)
+
+        # Simulate
         cs.simulate(dt=dt, T=T)
         y = np.c_[y, cs.x[:]]             # Store last states
 

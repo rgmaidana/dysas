@@ -34,7 +34,7 @@ Optional arguments for the constructor function are the differential equation so
 ```
 from MarineSystemSim.Vessels import Ship
 
-ship = Ship(input_model="rudder")
+ship = Ship()
 ```
 
 The ship's constructive parameters may be updated by changing the variables directly:
@@ -55,8 +55,33 @@ The simulation runs every "dt" seconds, for "T" seconds. Thus, the number of tim
 For example, if dt is 0.5 seconds and T is 10 seconds, this means the ship states will be computed every half second for 10 seconds.
 This means the ODE solver will run for 10/0.5 = 20 iterations, and thus users may change the simulation coarseness by changing the ratio between T and dt.
 
-The Ship class also includes PID controllers for surge speed and heading. If users choose to use the controllers, the PID gains must be tuned to the specific ship being simulated.
-See the [CyberShip PID]() example for more details.
+The package also includes Controller (e.g., PID) and Actuator (e.g., Thruster-Rudder, Generalized Forces) classes.
+To use, for example, the PID controller:
+
+```
+from MarineSystemSim.Controller import PID
+
+controller = PID()
+controller.kp = 1
+controller.ki = 0
+controller.kd = 0
+controller.T = 1
+```
+
+To use, for example, the Thruster-Rudder model:
+
+```
+from MarineSystemSim.Actuator import ThrusterRudder
+
+actuator = ThrusterRudder()
+actuator.Kt = 1
+actuator.Kq = 1
+actuator.D = 1
+actuator.c_rudder_r = 1
+actuator.c_rudder_v = 1
+```
+
+The [Cybership PID]() example uses the PID controller and Thruster-Rudder actuator model.
 
 ## Examples
 
@@ -64,7 +89,7 @@ This package currently contains 3 [examples](https://github.com/rgmaidana/predic
 
 * Model and simulation of NTNU's Gunnerus Research Vessel, using the generalized forces input model;
 * Model and simulation of NTNU's CyberShip Drilling Vessel scaled model, using the thruster/rudder model;
-* Model, simulation and linear control (surge speed and heading) of NTNU's CyberShip Drilling Vessel scaled model, using the thruster/rudder model.
+* Model, simulation and linear PID control (i.e., surge speed and heading control) of NTNU's CyberShip Drilling Vessel scaled model, using the thruster/rudder model.
 
 You can run the examples with:
 
