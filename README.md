@@ -1,6 +1,6 @@
 # Marine Systems Simulation python package
 
-This package implements state-space differential equation models and for simulating marine systems (e.g., ships) in Python 2.7 (master branch) and 3.6 (python36 branch).
+This package implements state-space differential equation models and for simulating marine systems (e.g., ships) in Python.
 Currently this package implements a generic ship state-space model, from the combined kinematic and newtonian dynamic 3 DoF models in the [Marine Cybernetics lecture notes](http://folk.ntnu.no/assor/Public/2018-08-20%20marcyb.pdf).
 
 
