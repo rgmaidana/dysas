@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from MarineSystemSim.Actuator import GeneralizedForces
-from MarineSystemSim.Vessels import Ship
+from MarineSystemSim.Vessel import Ship
 import numpy as np
 from scipy.integrate import ode
 

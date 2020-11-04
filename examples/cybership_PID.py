@@ -2,7 +2,7 @@
 
 from MarineSystemSim.Actuator import ThrusterRudder
 from MarineSystemSim.Controller import PID
-from MarineSystemSim.Vessels import Ship
+from MarineSystemSim.Vessel import Ship
 import numpy as np
 from scipy.integrate import ode
 
