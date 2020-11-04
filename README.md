@@ -44,7 +44,7 @@ ship.m = 1      # Mass, kg
 ship.Xg = 0     # X coordinate for center of gravity, meters
 ```
 
-Users can find all the parameters in the [Ship class](), and an explanation of the parameters in the [Marine Cybernetics lecture notes](http://folk.ntnu.no/assor/Public/2018-08-20%20marcyb.pdf).
+Users can find all the parameters in the [Ship class](https://github.com/rgmaidana/python-mss/blob/master/MarineSystemSim/Vessels/__init__.py), and an explanation of the parameters in the [Marine Cybernetics lecture notes](http://folk.ntnu.no/assor/Public/2018-08-20%20marcyb.pdf).
 
 After instantiating and parametrizing the ship, use the `simulate()` function to run the simulation and update the ship states.
 The simulate function arguments are:
@@ -81,7 +81,7 @@ actuator.c_rudder_r = 1
 actuator.c_rudder_v = 1
 ```
 
-The [Cybership PID]() example uses the PID controller and Thruster-Rudder actuator model.
+The [Cybership PID](https://github.com/rgmaidana/python-mss/blob/master/examples/cybership_PID.py) example uses the PID controller and Thruster-Rudder actuator model.
 
 ## Examples
 
