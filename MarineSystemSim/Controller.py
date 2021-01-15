@@ -1,5 +1,6 @@
 # coding=utf-8
 
+from MarineSystemSim.Utils import saturate
 from numpy import inf
 
 # Digital PID controller class
@@ -48,17 +49,9 @@ class PID:
         D = ((self.e[-1] - self.e[-2]) / self.T)*self.kd
         
         # PID controller output with saturation
-        self.u = self.saturate(P+I+D)
+        self.u = saturate(P+I+D, self.usat[0], self.usat[1])
 
         # Roll back error vector
         self.e[-2] = self.e[-1]
 
         return self.u
-    
-    # Apply saturation to controller output
-    def saturate(self, u):
-        if u < self.usat[0]:
-            u = self.usat[0]
-        elif u > self.usat[1]:
-            u = self.usat[1]
-        return u
