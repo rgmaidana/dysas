@@ -43,7 +43,7 @@ For the "ship" component, users can find all the parameters in the [Ship class](
 
 This package currently contains 4 [examples](https://github.com/rgmaidana/dysas/tree/master/examples):
 
-* [!! Not currently compatible with the component-based simulation, must define an engine and actuation mode !!] Simulation of NTNU's Gunnerus Research Vessel;
+* **[!! Not currently compatible with the component-based simulation, must define an engine and actuation mode !!]** Simulation of NTNU's Gunnerus Research Vessel;
 * Simulation of NTNU's CyberShip Drilling Vessel scaled model, using the thruster/rudder components;
 * Simulation and linear PID control (i.e., surge speed and heading control) of NTNU's CyberShip Drilling Vessel scaled model, using the thruster/rudder model;
 * Simulation, linear PID control (i.e., surge speed and heading control), and reference following (i.e., following a set of waypoints) of NTNU's CyberShip Drilling Vessel scaled model, using the thruster/rudder model;
