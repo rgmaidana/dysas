@@ -1,7 +1,6 @@
 # coding=utf-8
 
 from math import pi
-from numpy.linalg import norm
 
 ### Set of utility functions common to all modules
 

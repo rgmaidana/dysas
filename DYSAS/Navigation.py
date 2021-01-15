@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from collections import deque
-from MarineSystemSim.Utils import deg2rad, rad2deg
+from DYSAS.Utils import deg2rad, rad2deg
 from math import pi, sqrt, sin, cos, atan, atan2
 
 # Map a 0->360 degrees angle to 0->180 or 0->(-180) degrees

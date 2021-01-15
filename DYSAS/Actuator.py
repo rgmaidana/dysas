@@ -1,8 +1,7 @@
 # coding=utf-8
 
-from MarineSystemSim.Utils import saturate
+from DYSAS.Utils import saturate
 from math import copysign, pi
-from scipy.integrate import ode
 
 # Class to implement the generalized forces actuator model
 class GeneralizedForces:

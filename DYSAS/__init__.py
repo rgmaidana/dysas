@@ -1,9 +1,9 @@
-from MarineSystemSim.Actuator import Propeller, Rudder, GeneralizedForces
-from MarineSystemSim.Controller import PID
-from MarineSystemSim.Engine import DCMotor
-from MarineSystemSim.Power import Battery
-from MarineSystemSim import Utils
-from MarineSystemSim.Vessel import Ship
+from DYSAS.Actuator import Propeller, Rudder, GeneralizedForces
+from DYSAS.Controller import PID
+from DYSAS.Engine import DCMotor
+from DYSAS.Power import Battery
+from DYSAS import Utils
+from DYSAS.Vessel import Ship
 
 from scipy.integrate import ode
 

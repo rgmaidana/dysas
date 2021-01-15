@@ -3,8 +3,7 @@
 # TODO: Implement Machinery System Operating mode (MSO-mode) from
 # https://github.com/BorgeRokseth/ship_in_transit_simulator
 
-from MarineSystemSim.Utils import saturate
-from scipy.integrate import ode
+from DYSAS.Utils import saturate
 
 # DC Motor following the common model (e.g., https://ctms.engin.umich.edu/CTMS/index.php?example=MotorSpeed&section=SystemModeling)
 class DCMotor:

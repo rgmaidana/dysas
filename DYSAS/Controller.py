@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from MarineSystemSim.Utils import saturate
+from DYSAS.Utils import saturate
 from numpy import inf
 
 # Digital PID controller class
