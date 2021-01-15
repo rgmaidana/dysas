@@ -1,13 +1,13 @@
 from setuptools import setup
 
-setup(name='MarineSystemSim',
+setup(name='DYSAS',
       version='0.3',
-      description='Python package for Marine Systems Simulation (e.g., models for marine vessels)',
-      url='http://www.github.com/rgmaidana/python-mss',
+      description='Python package for the Dynamic Systems Accident Simulator (DySAS)',
+      url='http://www.github.com/rgmaidana/dysas',
       author='Renan Maidana',
       author_email='renan.g.maidana@ntnu.no',
       license='MIT',
-      packages=['MarineSystemSim'],
+      packages=['DYSAS'],
       install_requires=[
           'numpy',
           'scipy'
