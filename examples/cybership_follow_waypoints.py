@@ -1,13 +1,13 @@
 #/usr/bin/env python
 
-from MarineSystemSim import Simulator
-from MarineSystemSim.Actuator import Propeller, Rudder
-from MarineSystemSim.Controller import PID
-from MarineSystemSim.Engine import DCMotor
-from MarineSystemSim.Navigation import Waypoints, RefSystem
-from MarineSystemSim.Power import Battery
-from MarineSystemSim.Utils import deg2rad, kn2ms, rad2deg, ms2kn
-from MarineSystemSim.Vessel import Ship
+from DYSAS import Simulator
+from DYSAS.Actuator import Propeller, Rudder
+from DYSAS.Controller import PID
+from DYSAS.Engine import DCMotor
+from DYSAS.Navigation import Waypoints, RefSystem
+from DYSAS.Power import Battery
+from DYSAS.Utils import deg2rad, kn2ms, rad2deg, ms2kn
+from DYSAS.Vessel import Ship
 
 import numpy as np
 from scipy.integrate import ode
