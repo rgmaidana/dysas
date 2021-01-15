@@ -1,15 +1,13 @@
-# Marine Systems Simulation python package
+# Dynamic Systems Accident Simulator (DySAS)
 
-This package implements state-space differential equation models and for simulating marine systems (e.g., ships) in Python.
-Currently this package implements a generic ship state-space model, from the combined kinematic and newtonian dynamic 3 DoF models in the [Marine Cybernetics lecture notes](http://folk.ntnu.no/assor/Public/2018-08-20%20marcyb.pdf).
+This python package implements a simulator for dynamic systems as state-space differential equation models.
+The main objective is to simulate the state of a generic dynamic system in time until an accident (or some undesired consequence) occurs.
+As a case-study, this package implements a generic ship's components (e.g., engine, energy source, thruster, etc) as state-space models, and a simulator class which simulates the components and their connections in time.
+A diagram of the ship's "system dynamics" as components can be seen below.
 
+![](./component-based-sim.png)
 
-The user may choose between two input models for the ship: 
-* A generalized surge, sway and forces vector (inputs are Surge force, Sway force and Yaw force) .
-* A thruster/rudder model (inputs are commanded motor torque and rudder angle).
-
-
-Package structure based on Thor Fossen and Asgeir Johansen's Marine System Simulator (MSS) MATLAB toolbox.
+The ship kinematic models are based on Thor Fossen and Asgeir Johansen's Marine System Simulator (MSS) MATLAB toolbox.
 
 ## Dependencies
 
@@ -18,21 +16,16 @@ Package structure based on Thor Fossen and Asgeir Johansen's Marine System Simul
 
 ## Installation
 
-Install the package directly from PyPI:
-
-```pip install MarineSystemSim```
-
-Or clone the repository and install locally:
+Clone the repository and install locally:
 
 ```pip -e <path_to_repository>```
 
 ## Usage
 
-Simply import the class of controller marine system wanted and instantiate it.
-Optional arguments for the constructor function are the differential equation solver and solving method, and which input model to use (e.g., "generalized" or "rudder").
+Simply import the class wanted and instantiate it. For example:
 
 ```
-from MarineSystemSim.Vessels import Ship
+from DYSAS.Vessels import Ship
 
 ship = Ship()
 ```
@@ -44,52 +37,16 @@ ship.m = 1      # Mass, kg
 ship.Xg = 0     # X coordinate for center of gravity, meters
 ```
 
-Users can find all the parameters in the [Ship class](https://github.com/rgmaidana/python-mss/blob/master/MarineSystemSim/Vessels/__init__.py), and an explanation of the parameters in the [Marine Cybernetics lecture notes](http://folk.ntnu.no/assor/Public/2018-08-20%20marcyb.pdf).
-
-After instantiating and parametrizing the ship, use the `simulate()` function to run the simulation and update the ship states.
-The simulate function arguments are:
-* dt: ODE solver derivation time
-* T:  System sampling time
-
-The simulation runs every "dt" seconds, for "T" seconds. Thus, the number of times the states will be updated is equal to T/dt.
-For example, if dt is 0.5 seconds and T is 10 seconds, this means the ship states will be computed every half second for 10 seconds.
-This means the ODE solver will run for 10/0.5 = 20 iterations, and thus users may change the simulation coarseness by changing the ratio between T and dt.
-
-The package also includes Controller (e.g., PID) and Actuator (e.g., Thruster-Rudder, Generalized Forces) classes.
-To use, for example, the PID controller:
-
-```
-from MarineSystemSim.Controller import PID
-
-controller = PID()
-controller.kp = 1
-controller.ki = 0
-controller.kd = 0
-controller.T = 1
-```
-
-To use, for example, the Thruster-Rudder model:
-
-```
-from MarineSystemSim.Actuator import ThrusterRudder
-
-actuator = ThrusterRudder()
-actuator.Kt = 1
-actuator.Kq = 1
-actuator.D = 1
-actuator.c_rudder_r = 1
-actuator.c_rudder_v = 1
-```
-
-The [Cybership PID](https://github.com/rgmaidana/python-mss/blob/master/examples/cybership_PID.py) example uses the PID controller and Thruster-Rudder actuator model.
+For the "ship" component, users can find all the parameters in the [Ship class](https://github.com/rgmaidana/dysas/blob/master/DYSAS/Vessels/__init__.py), and an explanation of the parameters in the [Marine Cybernetics lecture notes](http://folk.ntnu.no/assor/Public/2018-08-20%20marcyb.pdf).
 
 ## Examples
 
-This package currently contains 3 [examples](https://github.com/rgmaidana/predictiveControl/tree/master/examples):
+This package currently contains 4 [examples](https://github.com/rgmaidana/dysas/tree/master/examples):
 
-* Model and simulation of NTNU's Gunnerus Research Vessel, using the generalized forces input model;
-* Model and simulation of NTNU's CyberShip Drilling Vessel scaled model, using the thruster/rudder model;
-* Model, simulation and linear PID control (i.e., surge speed and heading control) of NTNU's CyberShip Drilling Vessel scaled model, using the thruster/rudder model.
+* [!! Not currently compatible with the component-based simulation, must define an engine and actuation mode !!] Simulation of NTNU's Gunnerus Research Vessel;
+* Simulation of NTNU's CyberShip Drilling Vessel scaled model, using the thruster/rudder components;
+* Simulation and linear PID control (i.e., surge speed and heading control) of NTNU's CyberShip Drilling Vessel scaled model, using the thruster/rudder model;
+* Simulation, linear PID control (i.e., surge speed and heading control), and reference following (i.e., following a set of waypoints) of NTNU's CyberShip Drilling Vessel scaled model, using the thruster/rudder model;
 
 You can run the examples with:
 
