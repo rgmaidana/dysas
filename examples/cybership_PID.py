@@ -1,96 +1,118 @@
 #/usr/bin/env python
 
-from MarineSystemSim.Actuator import ThrusterRudder
+from MarineSystemSim import Simulator
+from MarineSystemSim.Actuator import Propeller, Rudder
 from MarineSystemSim.Controller import PID
+from MarineSystemSim.Engine import DCMotor
+from MarineSystemSim.Navigation import heading_circle
+from MarineSystemSim.Power import Battery
+from MarineSystemSim.Utils import deg2rad, kn2ms, rad2deg, ms2kn
 from MarineSystemSim.Vessel import Ship
+
 import numpy as np
 from scipy.integrate import ode
-
-# Convert m/s -> kn
-def ms2kn(a):
-    return a*1.943844
-
-# Convert kn -> m/s
-def kn2ms(a):
-    return a/1.943844
-
-# Convert deg -> rad
-def deg2rad(a):
-    return a * np.pi/180
-
-# Convert rad -> deg
-def rad2deg(a):
-    return a * 180/np.pi
 
 if __name__ == "__main__":
     # Create vessel instance (CyberShip Drilling Vessel scaled model)
     # Ship states are: East position, North position, Yaw, Velocity east, Velocity north, Velocity yaw
-    cs = Ship()
+    cybership = Ship()
 
     # Set CyberShip parameters (From Astrid Brodtkorb's matlab parameter files)
-    cs.m = 127.92
-    cs.Xg = 0
-    cs.Iz = 61.967
+    cybership.m = 127.92
+    cybership.Xg = 0
+    cybership.Iz = 61.967
     
-    cs.Xu = -2.332
-    cs.Yv = -4.673
-    cs.Nr = -0.01675
+    cybership.Xu = -2.332
+    cybership.Yv = -4.673
+    cybership.Nr = -0.01675
 
-    cs.Xu_dot = 3.262
-    cs.Yv_dot = 28.89; cs.Yr_dot = 0.525
-    cs.Nv_dot = 0.157; cs.Nr_dot = 13.98
+    cybership.Xu_dot = 3.262
+    cybership.Yv_dot = 28.89; cybership.Yr_dot = 0.525
+    cybership.Nv_dot = 0.157; cybership.Nr_dot = 13.98
 
-    # Thruster model parameters from Friedrich 2016 master thesis, using Kt and Kq from Thruster 1: https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2415123
-    actuator = ThrusterRudder()
-    actuator.Kt = 0.3763      # Propeller thrust constant
-    actuator.Kq = 0.0113      # Motor torque constant
-    actuator.D = 0.03
+    # Power source
+    bat = Battery(voltage=12)
+
+    # Motor/Engine
+    # Note: A 12VDC motor can only very slightly move a 90kg ship model. Thus, we comment the motor's armature resistance and inductance
+    # and leave in the default values (0.01 ohms and 0.5 H), which will generate a higher EMF to move the ship further.
+    motor = DCMotor()
+    motor.K = 0.3           # Linear friction coefficient
+    # Leave these commented for now so we can see the vessel move more than half a centimeter
+    # motor.R = 72e-3       # From OS OMA-2820-950 datasheet, called phase resistance (?)
+    # motor.L = 24e-6       # From OS OMA-2820-950 datasheet, called phase inductance (?)
+    motor.efficiency = 0.8  # From OS OMA-2890-950 datasheet
+    motor.max_current = 22  # From OS OMA-2890-950 datasheet
+
+    # Propeller/shaft model parameters from Friedrich's master thesis, using Kt and Kq from Thruster 1: https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2415123
+    # Note 2: Here the same logic as with the DC motor applies: A 3 cm propeller can only slightly move forward the heavy vessel model.
+    # We increase the propeller diameter by 10 times so the ship can move further.
+    propeller = Propeller()
+    propeller.Kt = 0.3763           # Load thrust coefficient
+    propeller.Kq = 0.0113           # Load torque coefficient
+    propeller.D = 0.3               # Propeller diameter (increased from model to move the ship forward)
+    propeller.Is = 25000.0/747225.0 # Moment of inertia
+    propeller.max_shaft_speed = 157 
 
     # Rudder model parameters
-    actuator.c_rudder_v = 0.166
-    actuator.c_rudder_r = 1.661
+    rudder = Rudder()
+    rudder.v = 0.166
+    rudder.r = 1.661
+    rudder.max_angle = deg2rad(30)  # Rudder can only turn +- 30 degrees
+    
+    # Simulation parameters
+    t = [0]             # Time vector
+    dt, T = 1, 10       # Derivation and sampling time
+    sim_time = 500      # Simulation time
 
-    # Simulation
-    t = [0]                                 # Time vector
-    y = cs.x.reshape((cs.x.shape[0],1))     # Output vector with initial states
-    u = actuator.u.reshape((actuator.u.shape[0],1))     # Actuator output vector
-    dt, T = 1, 10                           # Derivation and sampling time
-    sim_time = 200                          # Simulation time
+    # Simulator class
+    sim = Simulator(dt=dt, T=T)
+    sim.energy = bat
+    sim.engine = motor
+    sim.propulsion = propeller
+    sim.steering = rudder
+    sim.vessel = cybership
 
-    # Initialize speed PI controller, tuned for T = 10
-    speed_contr = PID()
-    speed_contr.kp = 8.5e-3
-    speed_contr.ki = 1.75e-4
-    speed_contr.usat = [-0.5, 0.5]
-    speed_contr.T = T                       # Digital PID model changes with sampling time, must be re-tuned then
+    # Initialize engine load PI controller, tuned for T = 10
+    load_contr = PID()
+    load_contr.kp = 4.5e-1
+    load_contr.ki = 5e-2
+    load_contr.usat = [0, 1]
+    load_contr.T = T                       # Digital PID model changes with sampling time, must be re-tuned then
 
     # Initialize heading PD controller, tuned for T = 10
     heading_contr = PID()
-    heading_contr.kp = 1e-2
-    heading_contr.kd = 4.2e-1
+    heading_contr.kp = 1e-1
+    heading_contr.kd = 3.5e0
     heading_contr.usat = [deg2rad(-30), deg2rad(30)]   # Rudder can move +- 30 degrees
     heading_contr.T = T
 
     # Initial conditions
-    cs.x[2] = deg2rad(0)             # 0 degrees north
-    cs.x[3] = kn2ms(0)               # 0 surge speed, ship was previously station-keeping
+    sim.engine.I = 0                
+    sim.propulsion.omega = 0
+    sim.steering.angle = deg2rad(0)
+    sim.vessel.x[2] = deg2rad(45)     # Vessel is headed 0 degrees (clockwise)
+    sim.vessel.x[3] = kn2ms(0)       # Vessel is stopped
 
     # Speed and heading setpoints
-    speed_contr.r = kn2ms(7)            # Top speed for cybership model is approximately 8.33 kn
-    heading_contr.r = deg2rad(45)       # 45 degrees
+    load_contr.r = kn2ms(1)                             # Top speed for cybership model is approximately 8.33 kn
+    heading_contr.r = heading_circle(deg2rad(45))       # 45 degrees
+
+    # Store data and plot it later
+    y = sim.vessel.x
+    u = np.array([0,0])
 
     while True:
-        # Update speed and heading controllers
-        actuator.u[0] = speed_contr.update(cs.x[3])
-        actuator.u[1] = heading_contr.update(cs.x[2])
+        # Update engine load controller
+        power_perc = load_contr.update(cybership.x[3])
+        # Update heading controller
+        rudder_angle = heading_contr.update(cybership.x[2])
         
-        # Update actuator output
-        cs.u = actuator.act(cs.x)
-        
-        # Simulate
-        cs.simulate(dt=dt, T=T)
-        y = np.c_[y, cs.x[:]]                   # Store last states
-        u = np.c_[u, actuator.u[:]]             # Store last inputs
+        sim.energy.u = power_perc
+        sim.steering.u = rudder_angle
+        sim.simulate()
+        y = np.c_[ y, np.array(cybership.x[:]).reshape((len(cybership.x),1)) ]    # Store last vessel states
+        u = np.c_[ u, np.array([power_perc, rudder_angle])]
 
         # Append time
         t.append(t[-1]+T)
@@ -116,7 +138,7 @@ if __name__ == "__main__":
         # Plot surge speed from simulation
         plt.figure()
         plt.grid()
-        plt.plot(t, ms2kn(speed_contr.r)*np.ones(len(t)), 'k--', lw=2.0)
+        plt.plot(t, ms2kn(load_contr.r)*np.ones(len(t)), 'k--', lw=2.0)
         plt.plot(t, [ms2kn(a) for a in y[3,:]], lw=2.0)
         plt.xlabel('Time (s)')
         plt.ylabel('Surge speed (kn)')
@@ -137,6 +159,10 @@ if __name__ == "__main__":
         plt.xlabel("E (m)")
         plt.ylabel("N (m)")
         # plt.axis([-np.min(y[1,:])-100, np.max(y[1,:])+100, -np.min(y[0,:])-100, np.max(y[0,:])+100])
+
+        plt.figure()
+        plt.grid()
+        plt.plot(y[1,:], [ms2kn(a) for a in y[3,:]])
         
         # Show figures
         plt.show()
