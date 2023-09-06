@@ -14,7 +14,7 @@ if __name__ == "__main__":
     sim = Simulator(GretheASV(), dt=dt, T=T)
 
     # Initial conditions
-    sim.vessel.x[2] = deg2rad(0)   # Vessel is headed 30 degrees (clockwise)
+    sim.vessel.x[2] = deg2rad(45)  # Vessel is headed 45 degrees (clockwise)
     sim.vessel.x[3] = kn2ms(0)     # Vessel is stopped
 
     # Array to store data and plot it later
