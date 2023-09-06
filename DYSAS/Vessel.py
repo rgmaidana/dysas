@@ -7,45 +7,71 @@ import numpy as np
 
 class Ship:
     # State-space model of a generic ship with 3 DoF.
-    # From Marine Cybernetics lecture notes (Sørensen, 2018): http://folk.ntnu.no/assor/Public/2018-08-20%20marcyb.pdf
+    # Source: Sørensen, 2018 - http://folk.ntnu.no/assor/Public/2018-08-20%20marcyb.pdf
     # Combines kinematic model from chapter 6 (i.e., Kinematics) and newtonian model from chapter 7 (i.e., Control-plant model: Vessel model).
     #
     # The 6 states are: N, E, yaw, vx, vy, vyaw (North, East, Yaw, and their velocities).
-    # The state transition functions are the states' derivates in time (i.e., their differential equations).
-    # Inputs depend if using thruster/rudder model or generalized forces, selected with the "input_model" flag.
-    #
-    # The ship includes PID control for surge speed and heading.
-    # These need to be tuned by the user according to their ship parameters and the system sampling time.
-
-    def __init__(self, solver='dopri5', method='rtol', input_model='generalized'):
-        # Ship constructive parameters
-        self.m = 1      # Mass, kg
-        self.Xg = 0     # X coordinate for center of gravity, m
-        self.Iz = 0     # Moment of inertia for Z axis (i.e., heave axis), kg.m^2
-            
-        # Linear damping parameters
-        self.Xu = 0
-        self.Yv = 0; self.Yr = 0
-        self.Nv = 0; self.Nr = 0
-        
-        # Inertia matrix parameters
-        self.Xu_dot = 0
-        self.Yv_dot = 0; self.Yr_dot = 0
-        self.Nv_dot = 0; self.Nr_dot = 0
-
-        # Restorative forces parameters
-        self.Xx = 0
-        self.Yy = 0
-        self.Npsi = 0
-        
+    # Inputs are forces in the surge, sway and yaw directions
+    
+    def __init__(self): 
         # State vector
         self.x = [0 for _ in range(6)]
         
         # Input vector
         self.u = [0 for _ in range(3)]
 
-        # Simulation engine
-        # self.ode_solver = ode(self.update).set_integrator(solver, method=method)
+        # Output vector (for now stores the simulation history)
+        self.y = np.zeros((6,1))
+
+        # Identifying parameters (normally from AIS)
+        self.mssi = None    # MSSI number
+        self.name = None    # Ship name
+        self.clas = None    # Ship class
+        self.fs = None      # Flag state
+
+        # Ship constructive parameters
+        self.Br = 0     # Breadth, m
+        self.LoA = 0    # Length-over-All, m
+        self.Fb = 0     # Freeboard (height from waterline), m
+        self.Dr = 0     # Draught
+        self.m = 0      # Mass, kg
+        self.Xg = 0     # X coordinate for center of gravity, m
+        self.Iz = 0     # Moment of inertia for Z axis (i.e., heave axis), kg.m^2
+            
+        # Inertia matrix elements
+        self.m11 = 0
+        self.m22 = 0; self.m23 = 0
+        self.m32 = 0; self.m33 = 0
+
+        # Linear damping matrix elements
+        self.d11 = 0
+        self.d22 = 0; self.d23 = 0
+        self.d32 = 0; self.d33 = 0
+
+        # Restorative forces matrix elements
+        self.g11 = 0
+        self.g22 = 0
+        self.g33 = 0
+
+        # Linear damping parameters
+        # self.Xu = 0
+        # self.Yv = 0; self.Yr = 0
+        # self.Nv = 0; self.Nr = 0
+        
+        # # Inertia matrix parameters
+        # self.Xud = 0
+        # self.Yvd = 0; self.Yrd = 0
+        # self.Nvd = 0; self.Nrd = 0
+
+        # # Restorative forces parameters
+        # self.Xx = 0
+        # self.Yy = 0
+        # self.Npsi = 0
+
+        # Environmental disturbances
+        self.wind = Wind()
+
+        self.constant_speed = False
     
     # Update state-space
     def update(self, x):
