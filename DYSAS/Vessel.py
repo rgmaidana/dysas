@@ -1,7 +1,9 @@
 # coding=utf-8
 
+from math import inf
+from DYSAS import *
 from math import cos, sin
-from scipy.integrate import ode
+import numpy as np
 
 class Ship:
     # State-space model of a generic ship with 3 DoF.
