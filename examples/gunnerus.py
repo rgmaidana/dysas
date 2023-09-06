@@ -1,53 +1,43 @@
 #!/usr/bin/env python
 
-from MarineSystemSim.Actuator import GeneralizedForces
-from MarineSystemSim.Vessel import Ship
+from DYSAS import Simulator
+from DYSAS.Vessel import Gunnerus
+from DYSAS.Utils import deg2rad, kn2ms, ms2kn, rad2deg
 import numpy as np
-from scipy.integrate import ode
+
+import time
 
 if __name__ == "__main__":
-    # Create vessel instance (NTNU's Gunnerus Research Vessel)
-    # Ship states are: East position, North position, Yaw, Velocity east, Velocity north, Velocity yaw
-    gunnerus = Ship()
+    # Simulation parameters
+    t = [0]             # Time vector
+    dt, T = 1, 10       # Derivation and sampling time
+    sim_time = 500      # Simulation time
 
-    # Set gunnerus' constructive parameters (From Marine Cybernetics lecture notes, Appendix D: http://folk.ntnu.no/assor/Public/2018-08-20%20marcyb.pdf)
-    gunnerus.m = 418061
-    gunnerus.Xg = 13.202
-    gunnerus.Iz = gunnerus.m*7.225**2  # From moment of inertia formula: mass x (radius of gyration on z axis)^2
-    
-    gunnerus.Xu = 17400
-    gunnerus.Yv = 80200
-    gunnerus.Nr = 4971500
+    # Simulator class
+    sim = Simulator(Gunnerus(), dt=dt, T=T)
 
-    gunnerus.Xu_dot = -70000
-    gunnerus.Yv_dot = -340000; gunnerus.Yr_dot = 5749241.32
-    gunnerus.Nv_dot = gunnerus.Yr_dot; gunnerus.Nr_dot = -20240000.51
+    # Initial conditions
+    sim.vessel.x[2] = deg2rad(0)   # Vessel is headed 30 degrees (clockwise)
+    sim.vessel.x[3] = kn2ms(0)     # Vessel is stopped
 
-    # Initial conditions (All zero in this case)
-    gunnerus.x = np.zeros(gunnerus.x.shape[0])
+    # Array to store data and plot it later
+    sim.vessel.y = sim.vessel.x
 
-    # Acturator input
-    actuator = GeneralizedForces()
-    actuator.u[0] = 1                                      # 1 N/s on surge direction
+    # Surge force to generate approximately 5 kn
+    sim.vessel.propulsion.u = 4.47e4
 
-    # Simulation
-    t = [0]                                                # Time vector
-    y = gunnerus.x.reshape((gunnerus.x.shape[0],1))        # Output vector with initial states
-    T = 10                                                 # Sampling time
-    sim_time = 200                                         # Simulation time
-    
-    while True:
-        # Update actuator output        
-        gunnerus.u = actuator.act()
+    # Set up environmental forces (wind)
+    sim.vessel.wind.speed = 0#kn2ms(48.6)     # Approx. 25 m/s
+    sim.vessel.wind.dir = deg2rad(90)
 
-        # Simulate!
-        gunnerus.simulate(dt=1, T=10)           # Simulate ship
-        y = np.c_[y, gunnerus.x[:]]             # Store last states
+    for _ in range(0, sim_time, sim.T):
+        # Simulate for T seconds with a step of dt
+        sim.simulate(sim.vessel.get_state_vector())     # Simulate ship
 
         # Append time
         t.append(t[-1]+T)
-        if t[-1] >= sim_time:     # If end of simulation, break loop
-            break
+
+    print("Total time simulated: %.4f" % sim.t)
 
     # Plot results
     try:
@@ -58,21 +48,35 @@ if __name__ == "__main__":
         # Plot output from simulation
         plt.figure()
         plt.grid()
-        for k in range(y.shape[0]):
-            plt.plot(t, y[k,:], lw=2.0)
+        for k in range(sim.vessel.y.shape[0]):
+            plt.plot(t, sim.vessel.y[k,:], lw=2.0)
         plt.xlabel('Time (s)')
         plt.ylabel('States')
-        for k in range(0,y.shape[0]):
+        for k in range(0,sim.vessel.y.shape[0]):
             legend.append('y%d' % (k+1))
         plt.legend(legend)
         
         # Plot ship position
         plt.figure()
         plt.grid()
-        plt.plot(y[1,:], y[0,:], lw=2.0)
+        plt.plot(sim.vessel.y[1,:], sim.vessel.y[0,:], lw=2.0)
         plt.title("Ship position")
         plt.xlabel("E (m)")
         plt.ylabel("N (m)")
+
+        # Plot surge speed from simulation
+        plt.figure()
+        plt.grid()
+        plt.plot(t, [ms2kn(a) for a in sim.vessel.y[3,:]], lw=2.0)
+        plt.xlabel('Time (s)')
+        plt.ylabel('Surge speed (kn)')
+
+        # Plot heading from simulation
+        plt.figure()
+        plt.grid()
+        plt.plot(t, [rad2deg(a) for a in sim.vessel.y[2,:]], lw=2.0)
+        plt.xlabel('Time (s)')
+        plt.ylabel('Heading (deg)')
         
         # Show figures
         plt.show()
