@@ -10,7 +10,8 @@ setup(name='DYSAS',
       packages=['DYSAS'],
       install_requires=[
           'numpy',
-          'scipy'
+          'scipy',
+          'cvxopt'
       ],
       zip_safe=False
     )
