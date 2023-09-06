@@ -52,7 +52,7 @@ if __name__ == "__main__":
         plt.legend(legend)
         
         # Plot ship position
-        plt.figure()
+        plt.figure(); plt.axis('equal')
         plt.grid()
         plt.plot(sim.vessel.y[1,:], sim.vessel.y[0,:], lw=2.0)
         plt.title("Ship position")
