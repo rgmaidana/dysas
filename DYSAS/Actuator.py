@@ -1,30 +1,36 @@
 # coding=utf-8
 
-from DYSAS.Utils import saturate
-from math import copysign, pi
+from DYSAS.Utils import saturate, deg2rad
+from math import copysign, pi, inf, sin, cos, atan2, sqrt
+
+# Constants
+rho = 1029      # Saltwater density
 
 # Class to implement the generalized forces actuator model
 class GeneralizedForces:
     def __init__(self):
-        # Controller input vector
+        # Input vector
         self.u = [0 for _ in range(3)]
         
+        # State vector
+        self.x = [0 for _ in range(3)]
+        
+    def diff(self):
+        return [0 for _ in range(3)]
+
     def output(self):
         return self.u
 
-# Class for implementing the propeller shaft and blades
+# Class for implementing a propeller
 # Input: Torque from a motor/engine
 class Propeller:
-    def __init__(self, Is=1, Kq=0, Kt=0, D=0, max_shaft_speed=1, rho=1000):
+    def __init__(self, Is=1, Kq=0, Kt=0, D=0, max_shaft_speed=inf):
         # Constructive parameters
         self.Is = Is    # Moment of inertia
         self.Kq = Kq    # Load torque coefficient
         self.Kt = Kt    # Load thrust coefficient
         self.D = D      # Propeller diameter
         self.max_shaft_speed = max_shaft_speed
-
-        # Other parameters
-        self.rho = rho  # Water density
         
         # Propeller state-space
         self.x = [0]                # Angular shaft speed
@@ -34,12 +40,12 @@ class Propeller:
 
     def diff(self):
         # State derivative
-        return [(1/self.Is)*( self.u - copysign(1, self.x[0])*self.Kq*self.rho*self.D**5*(self.x[0]/(2*pi))**2 )]
+        return [(1/self.Is)*( self.u - copysign(1, self.x[0])*self.Kq*rho*self.D**5*(self.x[0]/(2*pi))**2 )]
 
     def output(self):
         # Output thrust
         omega = saturate(self.x[0], -self.max_shaft_speed, self.max_shaft_speed)
-        return copysign(1, omega) * self.Kt * self.rho * self.D**4 * (omega/(2*pi))**2
+        return copysign(1, omega) * self.Kt * rho * self.D**4 * (omega/(2*pi))**2
 
     # def update(self, t, x, u=0):
     #     # Angular shaft speed differential function
@@ -50,7 +56,7 @@ class Propeller:
     #     # N.B 3! Last term of model, Kw*omega, is not included here because it is accounted for in the motor model.
     #     # This means the friction is between the rotor and shaft, which agrees with our assumption that
     #     # there is no slack or slip in the shaft-propeller junction.
-    #     return (1/self.Is)*( u - copysign(1, x)*self.Kq*self.rho*self.D**5*(x/(2*pi))**2 )
+    #     return (1/self.Is)*( u - copysign(1, x)*self.Kq*rho*self.D**5*(x/(2*pi))**2 )
 
     # # Perform simulation for some time, and ODE solver internally updates states
     # # Parameters:
@@ -69,7 +75,7 @@ class Propeller:
     #     self.omega = self.ode_solver.y
 
     #     # Output thrust
-    #     return copysign(1, self.omega) * self.Kt * self.rho * self.D**4 * (self.omega/(2*pi))**2
+    #     return copysign(1, self.omega) * self.Kt * rho * self.D**4 * (self.omega/(2*pi))**2
 
 # Class for implementing the rudder actuator model
 class Rudder:
@@ -77,7 +83,7 @@ class Rudder:
         # Constructive parameters
         self.v = v
         self.r = r
-        self.max_angle = 0
+        self.max_angle = max_angle
 
         # Rudder state-space
         self.x = [0]        # Rudder angle
@@ -85,7 +91,7 @@ class Rudder:
         # Input (commanded rudder angle)
         self.u = 0
         
-    # The rudder angle remains constant
+    # The rudder angle does not change with time
     def diff(self):
         # State derivative
         return [0]
@@ -96,3 +102,51 @@ class Rudder:
         # Thus, this ship model is underactuated, and there is a strong coupling between motor torque (i.e., propeller thrust) and heading.
         angle = saturate(self.u, -self.max_angle, self.max_angle)
         return -self.v * surge_v * angle, -self.r * surge_v * angle
+
+# Class for implementing an Azimuth Thruster
+# From MCSim_python repository: https://github.com/NTNU-MCS/MCSim_python/blob/main/lib/thrusters.py
+# https://github.com/NTNU-MCS/MCSim_python/blob/main/models/RVG_maneuvering/Documentation_RVG_maneuvering_model.pdf
+class Azimuth:
+    def __init__(self, Ct=1, Ap = 1, Al=1, Ad=1, Cd0=1, Pt=[0, 0, 0]):
+        # Constructive parameters
+        self.Ct = Ct        # Thrust force coefficient
+        self.Ap = Ap        # Foil projected area
+        self.Al = Al        # Lift parameter
+        self.Ad = Ad        # Drag parameter
+        self.Cd0 = Cd0      # Base drag
+        self.Pt = Pt        # Position of thruster in body frame
+        
+        # Other parameters
+        self.maxAngle = deg2rad(30)  # Maximum thruster angle
+
+        # State vector
+        self.x = [0]
+
+        # Input (propeller rpm, thruster angle)
+        self.u = [0, 0]
+
+    def diff(self):
+        return [0]
+    
+    # Parameters: surge and sway velocities
+    def output(self, surge_v, sway_v):
+        # Saturate model inputs
+        # self.u[0] = saturate(self.u[0], 0, self.maxRPM)
+        # self.u[1] = saturate(self.u[1], -self.maxAngle, self.maxAngle)
+
+        Ft = self.Ct*self.u[0]**2
+        phi = self.u[1] - atan2(sway_v, surge_v)    # Angle of attack
+        V = sqrt(surge_v**2+sway_v**2)              # Total velocity
+
+        Cd = self.Cd0 + self.Ad*abs(phi)
+        Cl = self.Al*phi
+        Fd = 0.5*rho*self.Ap*Cd*V**2
+        Fl = 0.5*rho*self.Ap*Cl*V**2
+        Ffx = -Fd*cos(phi) + Fl*sin(phi)
+        Ffy = Fl*cos(phi) + Fd*sin(phi)
+
+        Fx = Ft*cos(self.u[1]) + Ffx*cos(self.u[1]) - Ffy*sin(self.u[1])
+        Fy = Ft*sin(self.u[1]) + Ffx*sin(self.u[1]) - Ffy*cos(self.u[1])
+        Mz = self.Pt[0]*Fy
+        
+        return Fx, Fy, Mz
