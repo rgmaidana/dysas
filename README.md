@@ -13,6 +13,7 @@ The ship kinematic models are based on Thor Fossen and Asgeir Johansen's Marine 
 
 * [numpy](https://www.numpy.org/)
 * [scipy](https://www.scipy.org/)
+* [pymap3d](https://pypi.org/project/pymap3d/)
 
 ## Installation
 
