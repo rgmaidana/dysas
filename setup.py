@@ -11,7 +11,8 @@ setup(name='DYSAS',
       install_requires=[
           'numpy',
           'scipy',
-          'cvxopt'
+          'cvxopt',
+          'pymap3d'
       ],
       zip_safe=False
     )
